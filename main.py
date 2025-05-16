@@ -209,6 +209,8 @@ def main() -> None:
     if not args.image and not args.dir:
         parser.print_help()
         print("\nError: Either --image or --dir must be specified")
+        print("\nAlternatively, you can use the Gradio web interface with:")
+        print("  python run_gradio.py")
         sys.exit(1)
     
     if args.image and args.dir:
@@ -233,6 +235,8 @@ def main() -> None:
             process_batch(args.dir, args.output, custom_weights)
         
         print("Processing complete!")
+        print("\nTip: For an interactive web interface with more features, run:")
+        print("  python run_gradio.py")
         
     except Exception as e:
         print(f"Error: {e}")

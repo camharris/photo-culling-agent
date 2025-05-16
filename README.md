@@ -29,9 +29,9 @@ The Photo Culling Agent is an MVP that uses GPT-4o via LangGraph to analyze land
   - ✅ Keep/toss decision logic with weighted scoring and confidence levels
   - 🔄 End-to-end pipeline testing
 
-- ⬜ **Phase 3: Gradio Interface** - Planned
-  - ⬜ Image upload functionality
-  - ⬜ Results and verdicts display
+- 🔄 **Phase 3: Gradio Interface** - In Progress
+  - ✅ Image upload functionality
+  - ✅ Results and verdicts display
   - ⬜ User feedback collection
   - ⬜ Verdict override capability
 
