@@ -19,7 +19,7 @@ The Photo Culling Agent is an MVP that uses GPT-4o via LangGraph to analyze land
 
 - ✅ **Phase 1: Core Analysis Pipeline** - Complete
   - ✅ `ImageProcessor` for handling images
-  - ✅ `GPTAnalyzer` with prompt engineering 
+  - ✅ `GPTAnalyzer` with prompt engineering
   - ✅ `MetadataManager` with JSON schema
   - ✅ Unit tests for all components
 
@@ -111,7 +111,14 @@ photo-culling-agent/
 │   ├── test_gpt_analyzer.py
 │   ├── test_metadata_manager.py
 │   └── test_langgraph_pipeline.py
+├── scripts/                     # Development scripts
+│   └── lint.py                  # Linting script
+├── .flake8                      # Flake8 configuration
+├── .pre-commit-config.yaml      # Pre-commit hooks configuration
+├── pyproject.toml               # Black and isort configuration
 ├── environment.yml              # Conda environment specification
+├── requirements-dev.txt         # Development dependencies
+├── Makefile                     # Convenience commands
 ├── main.py                      # Application entry point
 └── README.md                    # This file
 ```
@@ -133,6 +140,38 @@ photo-culling-agent/
 └─────────────────┘     └───────────────┘     └────────────────┘
 ```
 
+## Development
+
+### Linting and Code Style
+
+This project uses several tools to maintain code quality and consistent style:
+
+- **Black**: Code formatter that enforces a consistent style
+- **isort**: Sorts and formats imports
+- **flake8**: Linter that checks for style and potential errors
+- **autoflake**: Removes unused imports and variables
+
+You can run these tools using the provided Makefile commands:
+
+```bash
+# Install development dependencies
+make install-dev
+
+# Format code automatically
+make format
+
+# Run all linters
+make lint
+
+# Check code without modifying files
+make lint-check
+
+# Set up pre-commit hooks (recommended)
+make pre-commit
+```
+
+Pre-commit hooks will automatically check and format your code on each commit.
+
 ## License
 
-MIT License 
+MIT License
