@@ -23,10 +23,10 @@ The Photo Culling Agent is an MVP that uses GPT-4o via LangGraph to analyze land
   - ✅ Unit tests for all components
 
 - 🔄 **Phase 2: LangGraph Workflow** - In Progress
-  - ⬜ LangGraph nodes and state management
-  - ⬜ Workflow edges and transitions
-  - ⬜ Keep/toss decision logic
-  - ⬜ End-to-end pipeline testing
+  - ✅ LangGraph nodes and state management
+  - ✅ Workflow edges and transitions
+  - 🔄 Keep/toss decision logic
+  - 🔄 End-to-end pipeline testing
 
 - ⬜ **Phase 3: Gradio Interface** - Planned
   - ⬜ Image upload functionality
@@ -70,7 +70,11 @@ The Photo Culling Agent is an MVP that uses GPT-4o via LangGraph to analyze land
 
 Run the application:
 ```bash
-python main.py
+# Process a single image
+python main.py --image path/to/image.jpg --output path/to/output/dir
+
+# Process a directory of images
+python main.py --dir path/to/images/dir --output path/to/output/dir
 ```
 
 ## Project Structure
@@ -89,7 +93,8 @@ photo-culling-agent/
 ├── tests/                       # Unit tests
 │   ├── test_image_processor.py
 │   ├── test_gpt_analyzer.py
-│   └── test_metadata_manager.py
+│   ├── test_metadata_manager.py
+│   └── test_langgraph_pipeline.py
 ├── environment.yml              # Conda environment specification
 ├── main.py                      # Application entry point
 └── README.md                    # This file

@@ -15,3 +15,6 @@ __pycache__/
 # osx
 .DS_Store
 
+input/
+output/
+samples/
