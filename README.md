@@ -10,7 +10,8 @@ The Photo Culling Agent is an MVP that uses GPT-4o via LangGraph to analyze land
 
 - Analyze landscape photographs using GPT-4o vision capabilities
 - Grade photos based on composition, exposure, subject, and layering
-- Sort photos into "keep" and "toss" categories
+- Sort photos into "keep" and "toss" categories with confidence levels
+- Provide detailed decision rationale with weighted scoring
 - Export detailed metadata in JSON format
 - Human-in-the-loop review interface (coming soon)
 
@@ -25,7 +26,7 @@ The Photo Culling Agent is an MVP that uses GPT-4o via LangGraph to analyze land
 - 🔄 **Phase 2: LangGraph Workflow** - In Progress
   - ✅ LangGraph nodes and state management
   - ✅ Workflow edges and transitions
-  - 🔄 Keep/toss decision logic
+  - ✅ Keep/toss decision logic with weighted scoring and confidence levels
   - 🔄 End-to-end pipeline testing
 
 - ⬜ **Phase 3: Gradio Interface** - Planned
@@ -39,6 +40,18 @@ The Photo Culling Agent is an MVP that uses GPT-4o via LangGraph to analyze land
   - ⬜ Error handling and edge cases
   - ⬜ Logging implementation
   - ⬜ User flow testing
+
+## Enhanced Decision Logic
+
+The keep/toss decision logic uses a sophisticated system that:
+
+1. **Applies weighted scoring** to different criteria (composition, exposure, subject, layering)
+2. **Calculates confidence levels** ranging from DEFINITE_KEEP to DEFINITE_TOSS
+3. **Provides detailed rationale** explaining the decision
+4. **Identifies borderline cases** that would benefit from human review
+5. **Allows customizable criteria weights** for different photography styles
+
+This enhanced approach provides more nuanced decisions than simple binary keep/toss verdicts, making the system more useful for photographers with different preferences.
 
 ## Installation
 
@@ -75,6 +88,9 @@ python main.py --image path/to/image.jpg --output path/to/output/dir
 
 # Process a directory of images
 python main.py --dir path/to/images/dir --output path/to/output/dir
+
+# Use custom weights for decision criteria
+python main.py --image path/to/image.jpg --output path/to/output/dir --weights "composition=2.0,exposure=0.8,subject=1.0,layering=0.7,base_score=1.0"
 ```
 
 ## Project Structure
