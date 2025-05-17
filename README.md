@@ -29,11 +29,16 @@ The Photo Culling Agent is an MVP that uses GPT-4o via LangGraph to analyze land
   - ✅ Keep/toss decision logic with weighted scoring and confidence levels
   - 🔄 End-to-end pipeline testing
 
-- 🔄 **Phase 3: Gradio Interface** - In Progress
+- 🔄 **Phase 3: Gradio Interface** - Complete
   - ✅ Image upload functionality
   - ✅ Results and verdicts display
-  - ⬜ User feedback collection
-  - ⬜ Verdict override capability
+  - ✅ User feedback collection
+  - ✅ Verdict override capability
+
+- ⬜ **Phase 3.5: Iterative Learning (MVP)** - Planned
+  - ⬜ Aggregate user feedback from a batch.
+  - ⬜ Pass feedback to GPTAnalyzer to modify prompts for subsequent batches.
+  - ⬜ Add UI controls for iterative batch processing (e.g., "Reset and Apply Learnings" button).
 
 - ⬜ **Phase 4: Integration and Testing** - Planned
   - ⬜ Full system integration
@@ -171,6 +176,13 @@ make pre-commit
 ```
 
 Pre-commit hooks will automatically check and format your code on each commit.
+
+## Future Considerations
+
+- **Persistent Learning:** Currently, feedback learning is session-based. For learning that persists across application restarts, feedback summaries or learned parameters could be saved to a local database (e.g., SQLite) or a configuration file.
+- **Advanced Example-Based Feedback:** To improve learning with more direct examples, future iterations could involve storing references to image data with feedback and developing strategies to select impactful examples for prompts, considering model context window limits.
+- **Refined UI for Overrides:** Enhance the UI to more clearly display when a user's verdict has overridden the AI's suggestion.
+- **Comprehensive Test Coverage:** Expand unit and integration tests for all new functionalities, including the learning loop and UI interactions.
 
 ## License
 

@@ -43,6 +43,11 @@
     - Submit feedback or tag favorites
   - Feedback is passed back into the LangGraph workflow.
 
+- **Iterative Learning (MVP Approach via Prompt Contextualization):**
+  - User feedback (agreement/disagreement, comments, overrides) from a processed batch is collected.
+  - This feedback is summarized and dynamically added to the GPT-4o system prompt for analyzing subsequent batches within the same session.
+  - The Gradio UI will include controls to clear the current batch and apply these session-based learnings before starting a new batch.
+
 - **In-Memory or Logical Categorization**
 
   - During MVP, actual file movement is skipped.
@@ -77,41 +82,51 @@
 
 **Tech Stack:**
 
-- **LangGraph** for orchestration  
-- **Python** for core pipeline logic  
-- **OpenAI GPT-4o** for photo vision and scoring logic  
-- **Gradio** for human-in-the-loop review UI  
+- **LangGraph** for orchestration
+- **Python** for core pipeline logic
+- **OpenAI GPT-4o** for photo vision and scoring logic
+- **Gradio** for human-in-the-loop review UI
 - **Pillow** or similar lib for lightweight image inspection (optional)
 
 ---
 
 **Out of Scope for MVP:**
 
-- RAW image handling  
-- Training from feedback  
-- File system manipulation  
-- Real-time collaboration/multi-user  
+- RAW image handling
+- Advanced or persistent training from feedback (beyond session-based prompt contextualization)
+- File system manipulation
+- Real-time collaboration/multi-user
 - Photo deduplication or clustering
 
 ---
 
 **Deliverables:**
 
-1. Gradio web app for image upload and HITL feedback  
-2. LangGraph pipeline for scoring and decisioning  
-3. JSON grading reports for `keep` images  
-4. Logic to organize photos in memory by verdict  
+1. Gradio web app for image upload and HITL feedback
+2. LangGraph pipeline for scoring and decisioning
+3. JSON grading reports for `keep` images
+4. Logic to organize photos in memory by verdict
 5. Modular design for future feedback learning
 
 ---
 
 **Next Steps:**
 
-- Scaffold LangGraph graph structure  
-- Write grading node prompt for GPT-4o  
-- Build Gradio interface with image upload and metadata display  
-- Integrate LangGraph pipeline with Gradio feedback loop  
-- Export JSON grading data per photo  
+- Scaffold LangGraph graph structure
+- Write grading node prompt for GPT-4o
+- Build Gradio interface with image upload and metadata display
+- Integrate LangGraph pipeline with Gradio feedback loop
+- Export JSON grading data per photo
 - Test full loop on local photo batch
+
+---
+
+**Future Considerations & Potential Enhancements:**
+
+- **Persistent Learning:** Implement a mechanism (e.g., SQLite database or configuration files) to store aggregated feedback or learned model adjustments (like prompt modifications or weight changes) so that learnings persist across application sessions.
+- **Advanced Example-Based Feedback:** Explore providing the model with more direct examples of (image + AI analysis + user feedback) to improve learning, potentially by selecting diverse and impactful feedback instances to include in prompts, mindful of context window limitations.
+- **Refined UI for Overrides:** Enhance the UI to more clearly display when a user's verdict has overridden the AI's suggestion.
+- **Detailed Logging and Error Handling:** Implement more robust logging throughout the application and improve error handling for edge cases.
+- **Comparative Analysis Implementation:** Fully implement the comparative analysis node in the LangGraph pipeline to rank similar images and apply logic like "keep best N".
 
 ---

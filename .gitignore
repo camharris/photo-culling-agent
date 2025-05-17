@@ -18,3 +18,4 @@ __pycache__/
 input/
 output/
 samples/
+output_gradio/
