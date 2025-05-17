@@ -121,6 +121,9 @@ class PhotoCullingInterface:
                                     label="Feedback Status", interactive=False
                                 )
 
+                                # Invisible state to hold the correct path for feedback
+                                active_image_path_for_feedback = gr.State(value=None)
+
             with gr.Tab("Results Summary"):
                 # Summary table and statistics
                 with gr.Row():
@@ -170,7 +173,14 @@ class PhotoCullingInterface:
 
             results_gallery.select(
                 fn=self.show_image_details,
-                outputs=[selected_image, verdict_box, confidence_box, score_box, notes_box],
+                outputs=[
+                    selected_image,
+                    verdict_box,
+                    confidence_box,
+                    score_box,
+                    notes_box,
+                    active_image_path_for_feedback,
+                ],
             )
 
             export_btn.click(fn=self.export_metadata, outputs=[export_path])
@@ -178,7 +188,7 @@ class PhotoCullingInterface:
             # Connect handle_feedback event handler
             submit_feedback_btn.click(
                 fn=self.handle_feedback,
-                inputs=[selected_image, feedback_radios, feedback_comments],
+                inputs=[active_image_path_for_feedback, feedback_radios, feedback_comments],
                 outputs=[feedback_status],
             )
 
@@ -266,10 +276,20 @@ class PhotoCullingInterface:
                 # Process the image
                 logger.info(f"About to call pipeline.process_image for {file_path}")
                 result = self.pipeline.process_image(file_path)
-                logger.info(f"pipeline.process_image returned for {file_path}. Result: {result}")
+                if result:
+                    analysis_result = result.get("analysis_result", {})
+                    logger.info(
+                        f"Pipeline returned for {file_path}. "
+                        f"Verdict: {result.get('verdict')}, "
+                        f"Confidence Level: {result.get('confidence_level')}, "
+                        f"Score: {analysis_result.get('score')}, "
+                        f"Error: {result.get('error')}"
+                    )
+                else:
+                    logger.error(f"Pipeline returned None or empty result for {file_path}")
 
                 # Check for errors
-                if result.get("error"):
+                if result and result.get("error"):
                     logger.error(f"Error reported by pipeline for {file_path}: {result['error']}")
                     continue
 
@@ -304,26 +324,36 @@ class PhotoCullingInterface:
             self._get_confidence_chart(),
         )
 
-    def show_image_details(self, evt: gr.SelectData) -> Tuple[str, str, str, str, str]:
+    def show_image_details(
+        self, evt: gr.SelectData
+    ) -> Tuple[Optional[str], str, str, str, str, Optional[str]]:
         """Show details for the selected image.
 
         Args:
             evt: Gallery selection event
 
         Returns:
-            Tuple containing image details
+            Tuple containing image details and the active file path for feedback state
         """
         # Get selected image data
         gallery_items = self._get_gallery_items()
         if not gallery_items or evt.index >= len(gallery_items):
-            return None, "No selection", "N/A", "N/A", "No analysis available"
+            # Return None for all outputs if no valid selection
+            return None, "No selection", "N/A", "N/A", "No analysis available", None
 
         selected_item = gallery_items[evt.index]
         file_path = selected_item[0]
 
         # If image hasn't been processed yet
         if file_path not in self.processed_images:
-            return file_path, "Not analyzed", "N/A", "N/A", "Image has not been analyzed yet"
+            return (
+                file_path,
+                "Not analyzed",
+                "N/A",
+                "N/A",
+                "Image has not been analyzed yet",
+                file_path,
+            )
 
         # Get the analysis result
         result = self.processed_images[file_path]
@@ -357,15 +387,18 @@ class PhotoCullingInterface:
                     if criterion != "base_score":
                         notes += f"- {criterion.capitalize()}: {score}/100\n"
 
-        return file_path, verdict_text, confidence_text, score_text, notes
+        return file_path, verdict_text, confidence_text, score_text, notes, file_path
 
     def handle_feedback(
-        self, current_image_path: Optional[str], feedback_choice: Optional[str], comments: str
+        self,
+        current_image_path_from_state: Optional[str],
+        feedback_choice: Optional[str],
+        comments: str,
     ) -> str:
         """Handle user feedback submission.
 
         Args:
-            current_image_path: The path of the image for which feedback is given.
+            current_image_path_from_state: The path of the image from the gr.State component.
             feedback_choice: User's agreement (e.g., "Agree", "Disagree").
             comments: User's textual feedback.
 
@@ -373,28 +406,31 @@ class PhotoCullingInterface:
             Status message for the feedback submission.
         """
         logger.info(
-            f"handle_feedback called for image: {current_image_path}, choice: {feedback_choice}, comments: '{comments}'"
+            f"handle_feedback called for image (from state): {current_image_path_from_state}, choice: {feedback_choice}, comments: '{comments}'"
         )
 
-        if not current_image_path:
-            logger.warning("handle_feedback: No image selected.")
+        if not current_image_path_from_state:
+            logger.warning(
+                "handle_feedback: No image path in state. Likely no image properly selected."
+            )
             return "No image selected. Please select an image first."
 
-        if current_image_path not in self.processed_images:
-            logger.warning(
-                f"handle_feedback: Image {current_image_path} not found in processed_images."
+        # current_image_path_from_state IS the key we use for self.processed_images
+        if current_image_path_from_state not in self.processed_images:
+            logger.error(
+                f"handle_feedback: Image path '{current_image_path_from_state}' from state not found in processed_images. This is unexpected!"
             )
-            return "Error: Selected image not found in processed records."
+            return "Error: Selected image data integrity issue. Please try re-selecting."
 
         if not feedback_choice:
             logger.warning(
-                f"handle_feedback: No feedback choice (Agree/Disagree) made for {current_image_path}."
+                f"handle_feedback: No feedback choice (Agree/Disagree) made for {current_image_path_from_state}."
             )
             return "Please select 'Agree' or 'Disagree' for the verdict."
 
         try:
             # Update the processed_images dictionary
-            image_data = self.processed_images[current_image_path]
+            image_data = self.processed_images[current_image_path_from_state]
 
             # Determine user_verdict_override based on feedback_choice
             ai_verdict = image_data.get("verdict", "unknown")
@@ -411,20 +447,18 @@ class PhotoCullingInterface:
             image_data["user_feedback"] = comments.strip()
             image_data["learning_signal"] = feedback_choice  # Storing Agree/Disagree directly
 
-            self.processed_images[current_image_path] = image_data
+            self.processed_images[current_image_path_from_state] = image_data
             logger.info(
-                f"Feedback recorded for {current_image_path}: Override='{image_data['user_verdict_override']}', Comments='{comments}'"
+                f"Feedback recorded for {current_image_path_from_state}: Override='{image_data['user_verdict_override']}', Comments='{comments}'"
             )
 
             # Re-export all metadata (simplification for now)
             export_msg = self.export_metadata()
             logger.info(f"Metadata re-export attempted: {export_msg}")
 
-            return (
-                f"Feedback submitted for {os.path.basename(current_image_path)}. Metadata updated."
-            )
+            return f"Feedback submitted for {os.path.basename(current_image_path_from_state)}. Metadata updated."
         except Exception as e:
-            logger.exception(f"Error processing feedback for {current_image_path}: {e}")
+            logger.exception(f"Error processing feedback for {current_image_path_from_state}: {e}")
             return f"Error submitting feedback: {str(e)}"
 
     def export_metadata(self) -> str:
