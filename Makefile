@@ -27,7 +27,7 @@ pre-commit:
 	pre-commit install
 
 test:
-	pytest tests
+	PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest -p pytest_mock tests
 
 clean:
 	rm -rf .pytest_cache
