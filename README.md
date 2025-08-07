@@ -35,10 +35,11 @@ The Photo Culling Agent is an MVP that uses GPT-4o via LangGraph to analyze land
   - ✅ User feedback collection
   - ✅ Verdict override capability
 
-- ⬜ **Phase 3.5: Iterative Learning (MVP)** - Planned
-  - ⬜ Aggregate user feedback from a batch.
-  - ⬜ Pass feedback to GPTAnalyzer to modify prompts for subsequent batches.
-  - ⬜ Add UI controls for iterative batch processing (e.g., "Reset and Apply Learnings" button).
+- ✅ **Phase 3.5: Iterative Learning (MVP)** - Complete
+  - ✅ Aggregate user feedback from a batch
+  - ✅ Pass feedback to GPTAnalyzer to modify prompts for subsequent batches (adaptive prompt)
+  - ✅ UI controls for iterative batch processing: "Next Batch (Apply Learnings)" and "Hard Reset"
+  - ℹ️ Learnings are session-scoped and prompt-based. Feedback text is capped to avoid overly long prompts.
 
 - ⬜ **Phase 4: Integration and Testing** - Planned
   - ⬜ Full system integration

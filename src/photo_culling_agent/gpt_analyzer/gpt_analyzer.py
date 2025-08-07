@@ -4,6 +4,7 @@
 """GPT-4o analyzer for image evaluation in the Photo Culling Agent."""
 
 import json
+import logging
 import os
 from typing import Any, Dict, Optional
 
@@ -24,6 +25,9 @@ class GPTAnalyzer:
             raise ValueError("OpenAI API key is required")
 
         self.client = OpenAI(api_key=self.api_key)
+
+        # Module logger
+        self._logger = logging.getLogger(__name__)
 
         # Updated system prompt for photo analysis with HITL context
         self.base_system_prompt = """
@@ -85,9 +89,16 @@ class GPTAnalyzer:
                               Set to None to clear feedback.
         """
         if feedback_summary:
+            # Cap feedback to avoid excessively long prompts
+            max_chars = 4000
+            trimmed_feedback = (
+                feedback_summary[: max_chars - 3] + "..."
+                if len(feedback_summary) > max_chars
+                else feedback_summary
+            )
             self.feedback_context_for_prompt = (
                 "\n\n---\nImportant: Please learn from this recent user feedback to improve your grading:\n"
-                f"{feedback_summary}\n---\n"
+                f"{trimmed_feedback}\n---\n"
             )
         else:
             self.feedback_context_for_prompt = None
@@ -154,7 +165,7 @@ class GPTAnalyzer:
             return result
 
         except Exception as e:
-            print(f"Error analyzing image: {e}")
+            self._logger.error(f"Error analyzing image: {e}")
             # Return a basic error structure if analysis fails
             return {
                 "filename": file_name,
