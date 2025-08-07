@@ -85,6 +85,8 @@ This enhanced approach provides more nuanced decisions than simple binary keep/t
    echo "OPENAI_API_KEY=your_api_key_here" > .env
    ```
 
+**Note:** This project uses conda for dependency management. All dependencies (including development tools) are specified in `environment.yml`.
+
 ## Usage
 
 Run the application:
@@ -160,9 +162,6 @@ This project uses several tools to maintain code quality and consistent style:
 You can run these tools using the provided Makefile commands:
 
 ```bash
-# Install development dependencies
-make install-dev
-
 # Format code automatically
 make format
 

@@ -1,8 +1,0 @@
-jupyter
-langgraph
-langchain
-openai
-python-dotenv
-pillow
-gradio
-pandas
