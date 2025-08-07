@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          python-version: '3.11'
+          activate-environment: photo-culling-agent
+          environment-file: environment.yml
+
+      - name: Lint
+        shell: bash -l {0}
+        run: make lint
+
+      - name: Run tests
+        shell: bash -l {0}
+        env:
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+        run: make test

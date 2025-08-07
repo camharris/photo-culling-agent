@@ -4,6 +4,7 @@
 """GPT-4o analyzer for image evaluation in the Photo Culling Agent."""
 
 import json
+import logging
 import os
 from typing import Any, Dict, Optional
 
@@ -25,8 +26,11 @@ class GPTAnalyzer:
 
         self.client = OpenAI(api_key=self.api_key)
 
+        # Module logger
+        self._logger = logging.getLogger(__name__)
+
         # Updated system prompt for photo analysis with HITL context
-        self.system_prompt = """
+        self.base_system_prompt = """
         You are a professional landscape photographer assisting with photo grading for a human-in-the-loop system. Your job is to evaluate each image for both artistic and technical merit and return structured output to guide further decision-making.
 
         Your responsibilities:
@@ -65,14 +69,43 @@ class GPTAnalyzer:
         "learning_signal": null
         }
         """
+        self.feedback_context_for_prompt: Optional[str] = None
 
     def customize_system_prompt(self, custom_prompt: str) -> None:
-        """Update the system prompt used for analysis.
+        """Update the base system prompt used for analysis.
 
         Args:
             custom_prompt: New system prompt for the GPT-4o analysis
         """
-        self.system_prompt = custom_prompt
+        self.base_system_prompt = custom_prompt
+        # Clear any existing feedback context if the base prompt changes significantly
+        self.clear_feedback_context()
+
+    def set_feedback_context(self, feedback_summary: Optional[str]) -> None:
+        """Set a feedback summary to be included in subsequent analysis prompts.
+
+        Args:
+            feedback_summary: A string summarizing user feedback from previous analyses.
+                              Set to None to clear feedback.
+        """
+        if feedback_summary:
+            # Cap feedback to avoid excessively long prompts
+            max_chars = 4000
+            trimmed_feedback = (
+                feedback_summary[: max_chars - 3] + "..."
+                if len(feedback_summary) > max_chars
+                else feedback_summary
+            )
+            self.feedback_context_for_prompt = (
+                "\n\n---\nImportant: Please learn from this recent user feedback to improve your grading:\n"
+                f"{trimmed_feedback}\n---\n"
+            )
+        else:
+            self.feedback_context_for_prompt = None
+
+    def clear_feedback_context(self) -> None:
+        """Clear any existing feedback context from the prompt."""
+        self.feedback_context_for_prompt = None
 
     def analyze_image(
         self, base64_image: str, file_name: str, post_processed: bool = False
@@ -92,12 +125,16 @@ class GPTAnalyzer:
         if post_processed:
             user_prompt += " Note: This image has been post-processed."
 
+        current_system_prompt = self.base_system_prompt
+        if self.feedback_context_for_prompt:
+            current_system_prompt = self.feedback_context_for_prompt + self.base_system_prompt
+
         try:
             # Call the OpenAI API with the image
             response = self.client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
-                    {"role": "system", "content": self.system_prompt},
+                    {"role": "system", "content": current_system_prompt},
                     {
                         "role": "user",
                         "content": [
@@ -128,7 +165,7 @@ class GPTAnalyzer:
             return result
 
         except Exception as e:
-            print(f"Error analyzing image: {e}")
+            self._logger.error(f"Error analyzing image: {e}")
             # Return a basic error structure if analysis fails
             return {
                 "filename": file_name,

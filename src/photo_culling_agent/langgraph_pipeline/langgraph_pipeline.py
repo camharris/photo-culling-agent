@@ -81,8 +81,16 @@ DECISION_THRESHOLDS = {
     "definite_toss": 30.0,
 }
 
-
+########################################################################################
 # Workflow node implementations
+########################################################################################
+
+
+########################################################################################
+# Process image node
+########################################################################################
+
+
 def process_image(state: PhotoCullingState, image_processor: ImageProcessor) -> PhotoCullingState:
     """Process an image and prepare it for analysis.
 
@@ -121,6 +129,11 @@ def process_image(state: PhotoCullingState, image_processor: ImageProcessor) -> 
         }
     except Exception as e:
         return {**state, "error": f"Error processing image: {str(e)}", "completed": False}
+
+
+########################################################################################
+# Analyze image node
+########################################################################################
 
 
 def analyze_image(state: PhotoCullingState, gpt_analyzer: GPTAnalyzer) -> PhotoCullingState:
@@ -171,6 +184,11 @@ def analyze_image(state: PhotoCullingState, gpt_analyzer: GPTAnalyzer) -> PhotoC
         }
     except Exception as e:
         return {**state, "error": f"Error analyzing image: {str(e)}", "completed": False}
+
+
+########################################################################################
+# Decide verdict node
+########################################################################################
 
 
 def decide_verdict(
@@ -312,6 +330,11 @@ def decide_verdict(
         return {**state, "error": f"Error deciding verdict: {str(e)}", "completed": False}
 
 
+########################################################################################
+# Comparative analysis node
+########################################################################################
+
+
 def comparative_analysis(state: PhotoCullingState) -> PhotoCullingState:
     """Perform comparative analysis for similar images (placeholder for future implementation).
 
@@ -333,6 +356,11 @@ def comparative_analysis(state: PhotoCullingState) -> PhotoCullingState:
     # 4. Adjust verdicts based on relative ranking
 
     return state
+
+
+########################################################################################
+# Update metadata node
+########################################################################################
 
 
 def update_metadata(
@@ -378,6 +406,11 @@ def update_metadata(
         }
     except Exception as e:
         return {**state, "error": f"Error updating metadata: {str(e)}", "completed": False}
+
+
+########################################################################################
+# Should end workflow node
+########################################################################################
 
 
 def should_end_workflow(state: PhotoCullingState) -> bool:
@@ -459,6 +492,54 @@ class PhotoCullingGraph:
 
         # Compile the graph
         return builder.compile()
+
+    def incorporate_feedback_data(self, processed_images_data: Dict[str, Dict[str, Any]]) -> None:
+        """Incorporate feedback from a batch of processed images into the GPTAnalyzer.
+
+        Args:
+            processed_images_data: A dictionary where keys are image paths and values are
+                                   their metadata including feedback.
+        """
+        feedback_entries = []
+        for image_path, data in processed_images_data.items():
+            # Ensure 'analysis_result' exists and is a dictionary before accessing nested keys
+            analysis_result = data.get("analysis_result")
+            if not isinstance(analysis_result, dict):
+                # Skip this entry if analysis_result is not as expected
+                continue
+
+            user_agreement = data.get("learning_signal")  # Agree/Disagree
+            user_comment_value = data.get("user_feedback")
+            user_comment = user_comment_value.strip() if isinstance(user_comment_value, str) else ""
+            user_override = data.get("user_verdict_override")
+
+            ai_verdict = analysis_result.get("verdict", "N/A")
+            ai_score = analysis_result.get("score", "N/A")
+
+            # Try to get a snippet of AI notes if available
+            ai_rationale_snippet = ""
+            if isinstance(analysis_result.get("analysis"), dict):
+                ai_rationale_snippet = analysis_result["analysis"].get("notes", "")
+                if len(ai_rationale_snippet) > 100:  # Keep it brief
+                    ai_rationale_snippet = ai_rationale_snippet[:97] + "..."
+
+            if user_agreement:  # Only include if there was explicit feedback
+                entry = f"- Image: '{os.path.basename(image_path)}', AI Verdict: '{ai_verdict}' (Score: {ai_score}), AI Notes: '{ai_rationale_snippet}', User: '{user_agreement}'"
+                if user_override and user_override != ai_verdict:
+                    entry += f", User Override: '{user_override}'"
+                if user_comment:
+                    entry += f", Comment: '{user_comment}'"
+                feedback_entries.append(entry)
+
+        if feedback_entries:
+            feedback_summary_string = "\n".join(feedback_entries)
+            self.gpt_analyzer.set_feedback_context(feedback_summary_string)
+        else:
+            self.gpt_analyzer.clear_feedback_context()  # No relevant feedback, clear any old context
+
+    def clear_learning_context(self) -> None:
+        """Clears any learned feedback context from the GPTAnalyzer."""
+        self.gpt_analyzer.clear_feedback_context()
 
     def process_image(self, image_path: str) -> Dict[str, Any]:
         """Process a single image through the workflow.

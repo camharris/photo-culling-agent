@@ -11,7 +11,8 @@ help:
 	@echo "  make clean            Clean up cache files"
 
 install-dev:
-	pip install -r requirements-dev.txt
+	@echo "Development dependencies are included in environment.yml"
+	@echo "Run: conda env create -f environment.yml && conda activate photo-culling-agent"
 
 format:
 	isort src tests scripts
@@ -27,7 +28,7 @@ pre-commit:
 	pre-commit install
 
 test:
-	pytest tests
+	PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest -p pytest_mock tests
 
 clean:
 	rm -rf .pytest_cache
