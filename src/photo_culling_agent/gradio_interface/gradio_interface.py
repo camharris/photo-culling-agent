@@ -83,6 +83,10 @@ class PhotoCullingInterface:
                             interactive=False,
                         )
 
+                        with gr.Row():
+                            apply_learnings_btn = gr.Button("Next Batch (Apply Learnings)")
+                            hard_reset_btn = gr.Button("Hard Reset (Clear All)")
+
                     with gr.Column(scale=3):
                         # Results display
                         results_gallery = gr.Gallery(
@@ -190,6 +194,38 @@ class PhotoCullingInterface:
                 fn=self.handle_feedback,
                 inputs=[active_image_path_for_feedback, feedback_radios, feedback_comments],
                 outputs=[feedback_status],
+            )
+
+            # List of all UI components that might need clearing or updating by reset actions
+            # Order matters for the return tuple in handler functions
+            ui_components_to_reset = [
+                progress,  # 0
+                results_gallery,  # 1
+                results_table,  # 2
+                verdict_counts,  # 3
+                confidence_counts,  # 4
+                selected_image,  # 5
+                verdict_box,  # 6
+                confidence_box,  # 7
+                score_box,  # 8
+                notes_box,  # 9
+                feedback_radios,  # 10
+                feedback_comments,  # 11
+                feedback_status,  # 12
+                active_image_path_for_feedback,  # 13
+                file_upload,  # 14
+            ]
+
+            apply_learnings_btn.click(
+                fn=self.handle_apply_learnings_and_reset_ui,
+                inputs=None,  # No direct inputs, operates on self.processed_images
+                outputs=ui_components_to_reset,
+            )
+
+            hard_reset_btn.click(
+                fn=self.handle_hard_reset,
+                inputs=None,  # No direct inputs
+                outputs=ui_components_to_reset,
             )
 
         return interface
@@ -590,6 +626,61 @@ class PhotoCullingInterface:
         ]
 
         return pd.DataFrame(data)
+
+    def _get_default_ui_values(self, status_message: str) -> Tuple:
+        """Helper to return a tuple of default values for resetting UI components."""
+        return (
+            status_message,  # progress textbox
+            [],  # results_gallery
+            pd.DataFrame(),  # results_table
+            pd.DataFrame(columns=["category", "count"]),  # verdict_counts
+            pd.DataFrame(columns=["category", "count"]),  # confidence_counts
+            None,  # selected_image
+            "",  # verdict_box
+            "",  # confidence_box
+            "",  # score_box
+            "",  # notes_box
+            None,  # feedback_radios (value=None clears selection)
+            "",  # feedback_comments
+            "",  # feedback_status
+            None,  # active_image_path_for_feedback (State)
+            None,  # file_upload (gr.File(value=None) or just None)
+        )
+
+    def handle_apply_learnings_and_reset_ui(self) -> Tuple:
+        """Applies learnings from the current batch and resets the UI for a new batch."""
+        logger.info("Apply Learnings & Reset UI button clicked.")
+        if not self.processed_images:
+            logger.info("No processed images with feedback to apply.")
+            return self._get_default_ui_values(
+                "No feedback to apply. Ready for new batch or upload images."
+            )
+
+        logger.info(f"Incorporating feedback from {len(self.processed_images)} processed images.")
+        self.pipeline.incorporate_feedback_data(self.processed_images)
+
+        # Reset internal state for the next batch
+        self.processed_images = {}
+        self.uploads_in_progress.clear()
+        logger.info("Internal state (processed_images, uploads_in_progress) cleared.")
+
+        return self._get_default_ui_values("Learnings applied. UI Reset. Ready for new batch.")
+
+    def handle_hard_reset(self) -> Tuple:
+        """Clears all learnings from the pipeline and resets the UI fully."""
+        logger.info("Hard Reset button clicked.")
+
+        logger.info("Clearing learning context from the pipeline.")
+        self.pipeline.clear_learning_context()
+
+        # Reset internal state
+        self.processed_images = {}
+        self.uploads_in_progress.clear()
+        logger.info("Internal state (processed_images, uploads_in_progress) cleared.")
+
+        return self._get_default_ui_values(
+            "System hard reset. All learnings and UI cleared. Ready for new batch."
+        )
 
     def launch(self, **kwargs) -> None:
         """Launch the Gradio interface.
