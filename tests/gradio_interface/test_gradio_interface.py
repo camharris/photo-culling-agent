@@ -95,11 +95,6 @@ class TestPhotoCullingInterface:
             mocker: Pytest mocker fixture.
             tmp_path: Pytest temporary path fixture.
         """
-        mock_shutil_rmtree = mocker.patch("shutil.rmtree")
-        mock_os_path_exists = mocker.patch("os.path.exists", return_value=True)
-
-        # Create an interface instance
-        # We need to control the temp_dir attribute for this test
         temp_dir_path = str(tmp_path / "specific_temp_dir_for_del_test")
 
         # Mock tempfile.mkdtemp specifically for this instance creation
@@ -111,6 +106,10 @@ class TestPhotoCullingInterface:
 
         interface = PhotoCullingInterface(output_dir=str(tmp_path / "output"))
         assert interface.temp_dir == temp_dir_path  # Ensure our mock was used
+
+        # Mock shutil.rmtree and os.path.exists for this specific test
+        mock_shutil_rmtree = mocker.patch("shutil.rmtree")
+        mock_os_path_exists = mocker.patch("os.path.exists", return_value=True)
 
         # Call __del__
         interface.__del__()
@@ -127,15 +126,16 @@ class TestPhotoCullingInterface:
             mocker: Pytest mocker fixture.
             tmp_path: Pytest temporary path fixture.
         """
-        mock_shutil_rmtree = mocker.patch("shutil.rmtree")
-        mock_os_path_exists = mocker.patch("os.path.exists", return_value=False)
-
         temp_dir_path = str(tmp_path / "non_existent_temp_dir")
         mocker.patch("tempfile.mkdtemp", return_value=temp_dir_path)
         mocker.patch("os.makedirs")
         mocker.patch("src.photo_culling_agent.gradio_interface.gradio_interface.PhotoCullingGraph")
 
         interface = PhotoCullingInterface(output_dir=str(tmp_path / "output"))
+
+        mock_shutil_rmtree = mocker.patch("shutil.rmtree")
+        mock_os_path_exists = mocker.patch("os.path.exists", return_value=False)
+
         interface.__del__()
 
         mock_os_path_exists.assert_called_with(temp_dir_path)
@@ -148,25 +148,23 @@ class TestPhotoCullingInterface:
             mocker: Pytest mocker fixture.
             tmp_path: Pytest temporary path fixture.
         """
-        mock_shutil_rmtree = mocker.patch("shutil.rmtree", side_effect=OSError("Test error"))
-        mock_os_path_exists = mocker.patch("os.path.exists", return_value=True)
-        # mock_print = mocker.patch("builtins.print") # To check if error is printed
-        # Patch the logger used in the __del__ method
-        mock_logger_error = mocker.patch(
-            "src.photo_culling_agent.gradio_interface.gradio_interface.logger.error"
-        )
-
         temp_dir_path = str(tmp_path / "exception_temp_dir")
         mocker.patch("tempfile.mkdtemp", return_value=temp_dir_path)
         mocker.patch("os.makedirs")
         mocker.patch("src.photo_culling_agent.gradio_interface.gradio_interface.PhotoCullingGraph")
 
         interface = PhotoCullingInterface(output_dir=str(tmp_path / "output"))
+
+        mock_shutil_rmtree = mocker.patch("shutil.rmtree", side_effect=OSError("Test error"))
+        mock_os_path_exists = mocker.patch("os.path.exists", return_value=True)
+        mock_logger_error = mocker.patch(
+            "src.photo_culling_agent.gradio_interface.gradio_interface.logger.error"
+        )
+
         interface.__del__()
 
         mock_os_path_exists.assert_called_with(temp_dir_path)
         mock_shutil_rmtree.assert_called_once_with(temp_dir_path)
-        # mock_print.assert_called_once_with("Error cleaning up temp directory: Test error")
         mock_logger_error.assert_called_once_with("Error cleaning up temp directory: Test error")
 
     # TODO: Add more tests for handle_upload, analyze_images, show_image_details, export_metadata,
