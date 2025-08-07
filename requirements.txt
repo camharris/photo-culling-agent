@@ -2,4 +2,7 @@ jupyter
 langgraph
 langchain
 openai
-python-dotenv 
+python-dotenv
+pillow
+gradio
+pandas
